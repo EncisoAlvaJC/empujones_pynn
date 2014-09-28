@@ -4,9 +4,53 @@
 ## Version sin prueba de errores, con fines de prueba
 ###################################################################
 
+import json
+import unicodedata
+
+import pybrain
+
+###################################################################
+###################################################################
+
+from pybrain.structure import FeedForwardNetwork, SigmoidLayer, FullConnection
+
+CEREBRO = FeedForwardNetwork()
+
+entrad = SigmoidLayer(21)
+#entrad = SigmoidLayer(1)
+oculto = SigmoidLayer(50)
+salida = SigmoidLayer(1)
+
+CEREBRO.addInputModule(entrad)
+CEREBRO.addModule(oculto)
+CEREBRO.addOutputModule(salida)
+
+preproceso = FullConnection(entrad,oculto)
+posproceso = FullConnection(oculto,salida)
+
+CEREBRO.addConnection(preproceso)
+CEREBRO.addConnection(posproceso)
+
+CEREBRO.sortModules()
+
+#CEREBRO.activate([0])
+
+###################################################################
+###################################################################
+
 T = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
 ficha1 = 'x'
 ficha2 = 'o'
+
+def vaciar_tablero():
+    returner = []
+    for i in T:
+        for j in i:
+            returner.append(ord(j))
+    return returner
+
+def preguntar(let1,sig1,fich,letr2,sig2):
+    return CEREBRO.activate([ ord(let1) , ord(sig1) , ord(fich) ] + vaciar_tablero() + [ ord(letr2), ord(sig2) ])
 
 def imprimir_tablero():
     print " -->"
@@ -63,12 +107,12 @@ def han_ganado():
             if cuantos == 4:
                 print
                 victoria = True
-                print "El jugador"
+                print "El jugador",
                 if candidato == ficha1:
-                    print "humano"
+                    print "humano",
                     gano0 = True
                 else:
-                    print "computadora"
+                    print "computadora",
                     gano1 = True
                 print "ha completado una fila, la",chr(i+ord('a'))
                 imprimir_tablero()
@@ -151,6 +195,12 @@ def JUEGA():
         imprimir_tablero()
         imprimir_mensaje(dran)
 
+        if dran == 1:
+            for i in [ 'a','b','c','d','1','2','3','4' ]:
+                for j in [ '+' , '-' ]:
+                    print i , j ,
+                    print preguntar( l_ant, s_ant, f_ant, i , j )
+
         validez_jugada = False
         
         while validez_jugada == False:
@@ -173,22 +223,20 @@ def JUEGA():
 
         # aqui se registran las jugadas
         if dran == 1:
-            G =[]
-            for i in T:
-                G.append(i)
-            for i in G:
-                for j in G:
-                    if j == ficha1:
-                        j = ficha2
-                    elif j == ficha2:
-                        j = ficha1
+            G = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
+            for i in range(4):
+                for j in range(4):
+                    if T[i][j] == ficha1:
+                        G[i][j] = ficha2
+                    elif T[i][j] == ficha2:
+                        G[i][j] = ficha1
             if f_ant == ficha1:
                 f_ant_p = ficha2
             elif f_ant == ficha2:
                 f_ant_p = ficha1
             else:
                 f_ant_p = '_'
-            LIST0.write(repr([n_fichas,l_ant,s_ant,f_ant_p,G,temp[0],temp[1]]))
+            LIST0.write(json.dumps([n_fichas,l_ant,s_ant,f_ant_p,G,temp[0],temp[1]]))
             LIST0.write('\n')
             #del G
             #del f_ant_p
@@ -196,7 +244,7 @@ def JUEGA():
             G =[]
             for i in T:
                 G.append(i)
-            LIST1.write(repr([n_fichas,l_ant,s_ant,f_ant,G,temp[0],temp[1]]))
+            LIST1.write(json.dumps([n_fichas,l_ant,s_ant,f_ant,G,temp[0],temp[1]]))
             LIST1.write('\n')
             #del G
 
@@ -213,32 +261,168 @@ def JUEGA():
         else:
             dran = 0
 
-    for i in T:
-        for j in i:
-            j = '_'
-
-    print "hora de recordar"
-    # hora de recordar
-    #if w0 == True:
-        #for i in LIST0:
-            #print i
-            #MEMORIA.write(repr(i))
-            #MEMORIA.write("\n")
-    #if w1 == True:
-        #for i in LIST1:
-            #print i
-            #MEMORIA.write(repr(i))
-            #MEMORIA.write("\n")
-    #MEMORIA.close()
-    LIST0.close()
-    LIST1.close()
+    for i in range(4):
+        for j in range(4):
+            T[i][j] = '_'
 
     print
     print "ESTADO : JUEGO FINALIZADO"
+    print
 
-def distribuye(nombre):
+    print 
+    print "ESTADO : CODIFICANDO PARTIDA"
+    print
+
+    LIST0.close()
+    LIST1.close()
+
+    cortoplazo = open('cortoplazo.txt','w')
+    # hora de recordar
+    if w0 == True:
+        N = recupera('recuerdos0.txt')
+        #print N
+        for i in N:
+            cortoplazo.write(json.dumps(i))
+            cortoplazo.write('\n')
+        #del N
+    if w1 == True:
+        N = recupera('recuerdos1.txt')
+        #print N
+        for i in N:
+            cortoplazo.write(json.dumps(i))
+            cortoplazo.write('\n')
+        #del N
+    cortoplazo.close()
+
+    estudia()
+
+
+def normaliza(unic):
+    return unicodedata.normalize('NFKD',unic).encode('ascii','ignore')
+
+def normaliza2(data):
+    res = []
+    for i in data:
+        res = res + [ normaliza(i) ]
+    return res
+
+def recupera(nombre):
+    returner = []
     archivo = open(nombre,'r')
-    for i in archivo:
-        for j in i:
-            print j
-        print
+    for y in archivo:        
+        temp = json.loads(y)
+        recuperador = [ temp[0] ] + normaliza2([ temp[1] , temp[2] , temp[3] ])
+        tab = temp[4]
+        trab = []
+        for m in tab:
+            Q = []
+            for n in m:
+                Q.append(normaliza(n))
+            trab.append(Q)
+        recuperador.append(trab)
+        recuperador = recuperador + normaliza2([ temp[-2] , temp[-1] ]) 
+        #print recuperador
+        returner = returner + [ recuperador ]
+    archivo.close()
+    #print returner
+    return returner
+
+def estandariza(lista):
+    returner = []
+    returner = returner + [ lista[0] , lista[1] , lista[2] , lista [3] , lista[4] ]
+    if ord('1') <= ord(lista[5]) <= ord('4'):
+        A = ord(lista[5]) - ord('1')
+    elif ord('a') <= ord(lista[5]) <= ord('d'):
+        A = ord(lista[5]) - ord('a') + 4
+    else:
+        print 'ERROR1'
+        return
+    if lista[6] == '+':
+        B = 0
+    elif lista[6] == '-':
+        B = 8
+    else:
+        print 'ERROR2'
+        return
+    returner = returner + [ A+B]
+    #.append(add)
+    #print returner
+    return returner
+
+def registro():
+    returner = []
+    archivo = open('largoplazo.txt','r')
+    for y in archivo:        
+        temp = json.loads(y)
+        recuperador = [ temp[0] ] + normaliza2([ temp[1] , temp[2] , temp[3] ])
+        tab = temp[4]
+        trab = []
+        for m in tab:
+            Q = []
+            for n in m:
+                Q.append(normaliza(n))
+            trab.append(Q)
+        recuperador.append(trab)
+        recuperador = recuperador + [ temp[5] ]
+        #print recuperador
+        returner = returner + [ recuperador ]
+    archivo.close()
+    #print returner
+    return returner
+
+def t_hor(memoria):
+    returner = [ memoria[0] ]
+    ch = memoria[1]
+    sg = memoria[2]
+    if ord('1') <= ord( memoria[1] ) <= ord('4'):
+        ch = ord('4') - ord(memoria[1]) + ord('1')
+    elif ord('a') <= ord( memoria[1] ) <= ord('d'):
+        if memoria[2] == '+':
+            s = '-'
+        elif memoria[2] == '-':
+            s = '+'
+    returner = returner + [ ch, sg , memoria[3] ]
+    G = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
+    for i in range(4):
+        G[0][i] = T[3][i]
+        G[1][i] = T[2][i]
+        G[2][i] = T[1][i]
+        G[3][i] = T[0][i]
+    returner = returner + [ G ]
+    if 0 <= memoria[5] <= 3:
+        N = memoria[5] + 8
+    elif 8 <= memoria[5] <= 11:
+        N = memoria[5] - 8
+    elif
+        
+    
+
+def estudia():
+    experiencia = recupera('cortoplazo.txt')
+    sabiduria = registro()
+    recordando = []
+    cinta = [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 16]
+    #print experiencia
+    for i in experiencia:
+        recordando = recordando + [ estandariza(i) ]
+    #print recordando
+    for i in recordando:
+        #print i[-1]
+        visto = False
+        for j in sabiduria:
+            #print j[-1]
+            if i[:-1] == j[:-1]:                
+                j[-1][i[-1]] += 1
+                j[-1][-1] += 1
+                visto = True
+                break
+        if visto == False:
+            #print "nuevo movimiento : "
+            sabiduria = sabiduria + [ i[0:-1] + [cinta] ]
+            sabiduria[-1][-1][i[-1]] = 2
+            sabiduria[-1][-1][-1] = 16
+    with open('largoplazo.txt','w') as f:
+        for i in sabiduria:
+            f.write( json.dumps( i ) )
+            f.write( '\n' )
+            #pass
