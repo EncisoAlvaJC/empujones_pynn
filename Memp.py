@@ -381,21 +381,83 @@ def t_hor(memoria):
             s = '-'
         elif memoria[2] == '-':
             s = '+'
-    returner = returner + [ ch, sg , memoria[3] ]
+    returner = returner + [ chr(ch), sg , memoria[3] ]
     G = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
     for i in range(4):
-        G[0][i] = T[3][i]
-        G[1][i] = T[2][i]
-        G[2][i] = T[1][i]
-        G[3][i] = T[0][i]
+        G[0][i] = memoria[4][3][i]
+        G[1][i] = memoria[4][2][i]
+        G[2][i] = memoria[4][1][i]
+        G[3][i] = memoria[4][0][i]
     returner = returner + [ G ]
-    if 0 <= memoria[5] <= 3:
-        N = memoria[5] + 8
-    elif 8 <= memoria[5] <= 11:
-        N = memoria[5] - 8
-    elif
-        
-    
+    let = memoria[5] % 8
+    if memoria[5] <= 8:
+        sig = 1
+    else:
+        sig = 0
+    if 0 <= let <= 3: # si es una letra
+        if sig == 1:
+            sig = 0
+        else:
+            sig = 1
+    else: # si es un numero
+        let = 7 - let + 4
+    returner = returner + [ 8*sig + let ]
+    return returner
+def t_ver(memoria):
+    returner = [ memoria[0] ]
+    ch = memoria[1]
+    sg = memoria[2]
+    if ord('a') <= ord( memoria[1] ) <= ord('d'):
+        ch = ord('d') - ord(memoria[1]) + ord('a')
+    elif ord('1') <= ord( memoria[1] ) <= ord('4'):
+        if memoria[2] == '+':
+            s = '-'
+        elif memoria[2] == '-':
+            s = '+'
+    returner = returner + [ chr(ch), sg , memoria[3] ]
+    G = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
+    for i in range(4):
+        G[0][i] = memoria[4][3][i]
+        G[1][i] = memoria[4][2][i]
+        G[2][i] = memoria[4][1][i]
+        G[3][i] = memoria[4][0][i]
+    returner = returner + [ G ]
+    let = memoria[5] % 8
+    if memoria[5] <= 8:
+        sig = 1
+    else:
+        sig = 0
+    if 4 <= let <= 7: # si es una letra
+        if sig == 1:
+            sig = 0
+        else:
+            sig = 1
+    else: # si es un numero
+        let = 4 - let + 0
+    returner = returner + [ 8*sig + let ]
+    return returner
+def t_tr1(memoria):
+    returner = [ memoria[0] ]
+    ch = memoria[1]
+    sg = memoria[2]
+    if ord('a') <= ord( memoria[1] ) <= ord('d'):
+        ch = ord(ch) - ord('a') + ord('1')
+    elif ord('1') <= ord( memoria[1] ) <= ord('4'):
+        ch = ord(ch) -ord('1') + ord('a')
+    returner = returner + [ chr(ch), sg , memoria[3] ]
+    G = [['_','_','_','_'],['_','_','_','_'],['_','_','_','_'],['_','_','_','_']]
+    for i in range(4):
+        for j in range(4):
+            G[i][j] = memoria[4][j][i]
+    returner = returner + [ G ]
+    if 0 <= memoria[5] % 8 <= 3:
+        let = memoria[5] + 4
+    else:
+        let = memoria[5] - 4
+        returner = returner + [ let ]
+    return returner
+def t_tr2(memoria):
+    return t_ver(t_hor(t_tr1(memoria)))
 
 def estudia():
     experiencia = recupera('cortoplazo.txt')
